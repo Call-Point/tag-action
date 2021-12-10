@@ -1,19 +1,14 @@
-#
-# This creates a lightweight tag in the repo.
-#
-#
-#
-name: 'Next Tag'
-description: 'Calculates the next semantic version number for a tag from last tag in the repo.'
+name: 'Tag'
+description: 'This action increments semantic versioning embedded in git tags. Optionally the action can also push the incremented tag to the repo.'
 inputs:
-  prefix:
-    description: "Tag prefix if applicable. Common examples: 'v' | 'callPilot-' | 'portal-'"
-    required: true
-    default: "v"
   bump:
     description: "Part of the semantic version number to increment. (major | minor | patch)"
     required: true
     default: patch
+  prefix:
+    description: "Tag prefix if applicable. Common examples: 'v' | 'callPilot-' | 'portal-'"
+    required: true
+    default: "v"
   do_push_tag:
     description: "Signal whether the action should push the next tag to the repo."
     required: false
@@ -34,15 +29,19 @@ runs:
     - id: next_tag
       shell: bash
       run: |
-        git fetch --tags
+        git fetch --tags --recurse-submodules=no
         PREFIX=${{ inputs.prefix }}
         BUMP=${{ inputs.bump }}
         if [[ "$PREFIX" ]]; then
-            LAST_TAG="$(/usr/bin/git tag --list $PREFIX* --sort=-v:refname | head -n 1)"
-            LAST_SEMVER=($(echo $LAST_TAG | tr $PREFIX ""))
+            LAST_TAG=$(git tag --list "$PREFIX*" --sort=-v:refname | head -n 1)
+            LAST_SEMVER=($(echo $LAST_TAG | tr -d $PREFIX))
         else
-            LAST_TAG="$(/usr/bin/git tag --sort=:-v:refname | head -n 1)"
+            LAST_TAG="$(git tag --sort=:-v:refname | head -n 1)"
             LAST_SEMVER=$LAST_TAG
+        fi
+        if [[ ! "$LAST_TAG" ]]; then
+          echo "No tag found. Using default SEMVER '0.0.0'."
+          LAST_SEMVER=0.0.0
         fi
         LAST_SEMVER_ELEMENTS=($(echo $LAST_SEMVER | tr "." " "))
         MAJOR="${LAST_SEMVER_ELEMENTS[0]}"
@@ -75,12 +74,21 @@ runs:
     - id: push_tag
       if: inputs.do_push_tag == 'true'
       shell: bash
+      env:
+        TOKEN: ${{ inputs.token }}
       run: |
-        if [[ ! "${{ inputs.token }}" ]]; then
+        if [[ ! "$TOKEN" ]]; then
           echo "Access token is required when pushing a tag."
           exit -1
         fi
-        URL="$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/tags/$GITHUB_SHA"
+        
+        URL="$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/refs"
         PAYLOAD="{\"ref\": \"refs/tags/${{ steps.next_tag.outputs.next_tag }}\", \"sha\": \"$GITHUB_SHA\"}"
-        RESPONSE=$(curl -s -X POST $URL -H "Authorization: token ${{ inputs.token }}" -d $PAYLOAD)
+        echo "url: $URL"
+        echo "payload: $PAYLOAD"
+        
+        RESPONSE=$(curl -s $URL -H "Authorization: token ${{ inputs.token }}" -d "$PAYLOAD")
+        LAST_STATUS=$?
         echo $RESPONSE
+        exit $LAST_STATUS
+        
