@@ -1,0 +1,86 @@
+#
+# This creates a lightweight tag in the repo.
+#
+#
+#
+name: 'Next Tag'
+description: 'Calculates the next semantic version number for a tag from last tag in the repo.'
+inputs:
+  prefix:
+    description: "Tag prefix if applicable. Common examples: 'v' | 'callPilot-' | 'portal-'"
+    required: true
+    default: "v"
+  bump:
+    description: "Part of the semantic version number to increment. (major | minor | patch)"
+    required: true
+    default: patch
+  do_push_tag:
+    description: "Signal whether the action should push the next tag to the repo."
+    required: false
+    default: 'false'
+  token:
+    description: "Privileged access token with write access to the repo."
+    required: false
+outputs:
+  last_tag:
+    description: "Previous tag with semantic version."
+    value: ${{ steps.next_tag.outputs.last_tag }}
+  next_tag:
+    description: "Tag with next semantic version."
+    value: ${{ steps.next_tag.outputs.next_tag }}
+runs:
+  using: "composite"
+  steps:
+    - id: next_tag
+      shell: bash
+      run: |
+        git fetch --tags
+        PREFIX=${{ inputs.prefix }}
+        BUMP=${{ inputs.bump }}
+        if [[ "$PREFIX" ]]; then
+            LAST_TAG="$(/usr/bin/git tag --list $PREFIX* --sort=-v:refname | head -n 1)"
+            LAST_SEMVER=($(echo $LAST_TAG | tr $PREFIX ""))
+        else
+            LAST_TAG="$(/usr/bin/git tag --sort=:-v:refname | head -n 1)"
+            LAST_SEMVER=$LAST_TAG
+        fi
+        LAST_SEMVER_ELEMENTS=($(echo $LAST_SEMVER | tr "." " "))
+        MAJOR="${LAST_SEMVER_ELEMENTS[0]}"
+        MINOR="${LAST_SEMVER_ELEMENTS[1]}"
+        PATCH="${LAST_SEMVER_ELEMENTS[2]}"
+        case "$BUMP" in
+            "major")
+                ((MAJOR+=1))
+                MINOR=0
+                PATCH=0
+            ;;
+            "minor")
+                ((MINOR+=1))
+                PATCH=0
+            ;;
+            "patch")
+                ((PATCH+=1))
+            ;;
+        esac
+        NEXT_SEMVER="$MAJOR.$MINOR.$PATCH"
+        NEXT_TAG="$PREFIX$NEXT_SEMVER"
+        echo "BUMP:        $BUMP"
+        echo "LAST SEMVER: $LAST_SEMVER"
+        echo "NEXT SEMVER: $NEXT_SEMVER"
+        echo "LAST TAG:    $LAST_TAG"
+        echo "NEXT TAG:    $NEXT_TAG"
+        echo "::set-output name=last_tag::$LAST_TAG"
+        echo "::set-output name=next_tag::$NEXT_TAG"
+    
+    - id: push_tag
+      if: inputs.do_push_tag == 'true'
+      shell: bash
+      run: |
+        if [[ ! "${{ inputs.token }}" ]]; then
+          echo "Access token is required when pushing a tag."
+          exit -1
+        fi
+        URL="$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/tags/$GITHUB_SHA"
+        PAYLOAD="{\"ref\": \"refs/tags/${{ steps.next_tag.outputs.next_tag }}\", \"sha\": \"$GITHUB_SHA\"}"
+        RESPONSE=$(curl -s -X POST $URL -H "Authorization: token ${{ inputs.token }}" -d $PAYLOAD)
+        echo $RESPONSE
