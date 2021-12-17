@@ -15,6 +15,35 @@ foo-1.2.3  # semver with prefix and delimiter
 
 If no prior tag is found then the action will default the semantic version to `0.0.1`.
 
+# TL;DR
+
+Copy this template:
+
+```yaml
+
+jobs:
+  my-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        id: artifacts-checkout
+        uses: actions/checkout@v2
+
+      - name: Tag Action
+        id: tag_action
+        uses: Call-Point/tag-action@main
+        with:
+          bump: patch
+          prefix: v
+          do_push_tag: true
+          token: ${{ secrets.DEVOPS_ACCESS_TOKEN }}
+
+      - name: Echo Output
+        id: tag_action_output
+        run: |
+          echo "last_tag: ${{ steps.tag_action.outputs.last_tag }}"
+          echo "next_tag: ${{ steps.tag_action.outputs.next_tag }}"
+
 # Usage
 
 ```yaml
@@ -31,9 +60,9 @@ If no prior tag is found then the action will default the semantic version to `0
     # to the repo. Defaults to 'false'. If 'true' then the 'token'
     # property must also be provided. See below.
     do_push_tag: true | false
-    # Optional. Personal access token with write privileges to push
-    # tags to the repo.
-    token: ghp_abcdeffghijklmnopqrstuv0123456789ABC
+    # Optional. Personal access token (PAT) with write privileges
+    # to push tags to the repo. The PAT must be a secret.
+    token: ${{ secrets.DEVOPS_ACCESS_TOKEN }}
 ```
 
 # Output
@@ -47,7 +76,40 @@ Use the expressions `${{ steps.<id>.outputs.next_tag }}` or `${{ steps.<id>.outp
 
 # Scenarios
 
-## Default Increment SEMVER Tag
+## Common Usage to Increment Tag with Prefix and Push to Repo
+```yaml
+- uses: Call-Point/tag-action@main
+  with:
+    bump: minor
+    prefix: v
+    do_push_tag: true
+    token: ${{ secrets.DEVOPS_ACCESS_TOKEN }}
+```
+
+## Read the Output Variables
+```yaml
+jobs:
+  my-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        id: artifacts-checkout
+        uses: actions/checkout@v2
+
+      - name: Tag Action
+        id: tag_action
+        uses:  Call-Point/tag-action@main
+        with:
+          bump: patch
+          prefix: v
+
+      - name: Echo Output
+        id: tag_action_output
+        run: |
+          echo "last_tag: ${{ steps.tag_action.outputs.last_tag }}"
+          echo "next_tag: ${{ steps.tag_action.outputs.next_tag }}"
+```
+## Default Action to Increment Patch Version of SEMVER Tag
 ```yaml
 - uses: Call-Point/tag-action@main
 ```
@@ -84,38 +146,5 @@ Use the expressions `${{ steps.<id>.outputs.next_tag }}` or `${{ steps.<id>.outp
 - uses: Call-Point/tag-action@main
   with:
     do_push_tag: true
-    token: ghp_abcdeffghijklmnopqrstuv0123456789ABC
-```
-## Realistic Increment Tag with Prefix and Push to Repo
-```yaml
-- uses: Call-Point/tag-action@main
-  with:
-    bump: minor
-    prefix: v
-    do_push_tag: true
-    token: ghp_abcdeffghijklmnopqrstuv0123456789ABC
-```
-
-## Read the Output Variables
-```yaml
-jobs:
-  my-job:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        id: artifacts-checkout
-        uses: actions/checkout@v2
-
-      - name: Tag Action
-        id: tag_action
-        uses:  Call-Point/tag-action@main
-        with:
-          bump: patch
-          prefix: v
-
-      - name: Echo Output
-        id: tag_action_output
-        run: |
-          echo "last_tag: ${{ steps.tag_action.outputs.last_tag }}"
-          echo "next_tag: ${{ steps.tag_action.outputs.next_tag }}"
+    token: ${{ secrets.DEVOPS_ACCESS_TOKEN }}
 ```
