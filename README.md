@@ -17,7 +17,7 @@ If no prior tag is found then the action will default the semantic version to `0
 
 # TL;DR
 
-Copy this template:
+Copy this template and make revisions as necessary:
 
 ```yaml
 
@@ -43,7 +43,7 @@ jobs:
         run: |
           echo "last_tag: ${{ steps.tag_action.outputs.last_tag }}"
           echo "next_tag: ${{ steps.tag_action.outputs.next_tag }}"
-
+```
 # Usage
 
 ```yaml
