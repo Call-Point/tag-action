@@ -23,6 +23,12 @@ outputs:
   next_tag:
     description: "Tag with next semantic version."
     value: ${{ steps.next_tag.outputs.next_tag }}
+  last_semver:
+    description: "Previous semantic version."
+    value: ${{ steps.next_tag.outputs.last_semver}}
+  next_semver:
+    description: "Next semantic version."
+    value: ${{ steps.next_tag.outputs.next_semver }}
 runs:
   using: "composite"
   steps:
@@ -70,6 +76,8 @@ runs:
         echo "NEXT TAG:    $NEXT_TAG"
         echo "::set-output name=last_tag::$LAST_TAG"
         echo "::set-output name=next_tag::$NEXT_TAG"
+        echo "::set-output name=last_semver::$LAST_SEMVER"
+        echo "::set-output name=next_semver::$NEXT_SEMVER"
     
     - id: push_tag
       if: inputs.do_push_tag == 'true'

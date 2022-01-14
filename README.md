@@ -71,8 +71,11 @@ The action sets the following output variables:
 
 - `last_tag` - Last tag found in the repo. Defaults to empty string if no tag is found.
 - `next_tag` - Next tag with incremented semantic version number.
+- `last_semver` - Last semantic version number found in the repo.
+- `next_semver` - Next incremented semantic version number.
 
-Use the expressions `${{ steps.<id>.outputs.next_tag }}` or `${{ steps.<id>.outputs.last_tag }}` in your workflow in steps following the action to read the output variables. Replace `<id>` with the id given to the action's step.
+
+Use the expressions `${{ steps.<id>.outputs.next_tag }}` or `${{ steps.<id>.outputs.last_tag }}` in your workflow in steps following the action to read the tag output variables. Replace `<id>` with the id given to the action's step. Use the same convention to read the `last_semver` and `next_semver` output variables.
 
 # Scenarios
 
@@ -108,6 +111,8 @@ jobs:
         run: |
           echo "last_tag: ${{ steps.tag_action.outputs.last_tag }}"
           echo "next_tag: ${{ steps.tag_action.outputs.next_tag }}"
+          echo "last_semver: ${{ steps.tag_action.outputs.last_semver }}"
+          echo "next_semver: ${{ steps.tag_action.outputs.next_semver }}"
 ```
 ## Default Action to Increment Patch Version of SEMVER Tag
 ```yaml
