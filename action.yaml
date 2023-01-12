@@ -74,10 +74,10 @@ runs:
         echo "NEXT SEMVER: $NEXT_SEMVER"
         echo "LAST TAG:    $LAST_TAG"
         echo "NEXT TAG:    $NEXT_TAG"
-        echo "::set-output name=last_tag::$LAST_TAG"
-        echo "::set-output name=next_tag::$NEXT_TAG"
-        echo "::set-output name=last_semver::$LAST_SEMVER"
-        echo "::set-output name=next_semver::$NEXT_SEMVER"
+        echo "last_tag=$LAST_TAG" >> $GITHUB_OUTPUT
+        echo "next_tag=$NEXT_TAG" >> $GITHUB_OUTPUT
+        echo "last_semver=$LAST_SEMVER" >> $GITHUB_OUTPUT
+        echo "next_semver=$NEXT_SEMVER" >> $GITHUB_OUTPUT
     
     - id: push_tag
       if: inputs.do_push_tag == 'true'
