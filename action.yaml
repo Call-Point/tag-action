@@ -38,13 +38,17 @@ runs:
         git fetch --tags --recurse-submodules=no
         PREFIX=${{ inputs.prefix }}
         BUMP=${{ inputs.bump }}
-        if [[ "$PREFIX" ]]; then
-            LAST_TAG=$(git tag --list "$PREFIX*" --sort=-v:refname | head -n 1)
-            LAST_SEMVER=${LAST_TAG#$PREFIX}
-        else
-            LAST_TAG="$(git tag --sort=-v:refname | head -n 1)"
-            LAST_SEMVER=$LAST_TAG
-        fi
+        # Read the whole tag list rather than piping to `head`: under pipefail, `head` exiting early
+        # can SIGPIPE `git tag` and fail the step with exit code 141.
+        # Only plain X.Y.Z tags count, so suffixed tags sharing the prefix (e.g. v5.9.0-common) are skipped.
+        LAST_TAG=""
+        while read -r TAG; do
+            if [[ "${TAG#"$PREFIX"}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                LAST_TAG=$TAG
+                break
+            fi
+        done < <(git tag --list "$PREFIX*" --sort=-v:refname)
+        LAST_SEMVER=${LAST_TAG#"$PREFIX"}
         if [[ ! "$LAST_TAG" ]]; then
           echo "No tag found. Using default SEMVER '0.0.0'."
           LAST_SEMVER=0.0.0

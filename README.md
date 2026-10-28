@@ -3,7 +3,8 @@
 This action increments semantic versioning embedded in git tags.
 
 Supports tags consisting of only a semantic version number or a semantic version number following a prefix. Prefixes can be any string and may or may not include a delimiter 
-character before the semantic version number. This action does not support suffixes following a semantic version number.
+character before the semantic version number. This action does not support suffixes following a semantic version number;
+tags with a suffix (e.g. `v1.2.3-common`) are ignored when finding the last tag.
 
 Examples:
 
